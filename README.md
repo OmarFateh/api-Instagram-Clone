@@ -33,7 +33,7 @@ Run the server
 * A user can tag other users in his image.
 * A user gets notification when other users tag him, like his image or add a comment to his image.
 * A user can view all his tagged images.
-* A user can images to his favourite list.
+* A user can add images to his favourite list.
 * A user can view all his favourite list images.
 * A user can explore and view images of other profiles, with whom there's mutual friends.
 
