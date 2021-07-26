@@ -3,15 +3,25 @@ from rest_framework import serializers
 from item.utils import datetime_to_string, rounded_timesince
 
 
-class ItemLikesCommentsCountMixinSerializer(serializers.Serializer):
+class ItemCommentLikesCountMixinSerializer(serializers.Serializer):
+    """
+    Item comment likes count mixin serializer.
+    """
+    likes_count = serializers.SerializerMethodField()
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+
+class ItemLikesCommentsCountMixinSerializer(ItemCommentLikesCountMixinSerializer):
     """
     Item likes comments count mixin serializer.
     """
-    likes_count = serializers.SerializerMethodField()
+    # likes_count = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     
-    def get_likes_count(self, obj):
-        return obj.likes.count()
+    # def get_likes_count(self, obj):
+    #     return obj.likes.count()
 
     def get_comments_count(self, obj):
         return obj.comments.count()

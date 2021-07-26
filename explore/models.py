@@ -22,19 +22,14 @@ class HashtagManager(models.Manager):
         # if not, create new hashtag.   
         return Hashtag.objects.create(name=title), True
 
-    def hashtag_to_qs(self, hashtags_str):
+    def hashtag_to_qs(self, hashtags_list):
         """
-        Take a string of hashtags, get rid of '#', split it using space as a delim, 
-        and return a queryset of hashtags.  
+        Take a string of hashtags, and return a queryset of hashtags.  
         """
         hashtags_ids = []
-        # take away any # in hashtags string and split it using space as a delim.
-        # here, a space is used a delim, so it's not allowed in the hashtag name.
-        hashtags_list = hashtags_str.replace("#", "").split()
         for hashtag in hashtags_list:
             # get or create each hashtag by using created_or_new method.
             obj, created = self.created_or_new(hashtag)
-            # append each hashtag's id to a list of hashtags ids
             hashtags_ids.append(obj.id) 
         # get queryset of hashtags by filtering their ids.
         return self.get_queryset().filter(id__in=hashtags_ids).distinct()

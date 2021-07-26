@@ -1,29 +1,24 @@
 from django.contrib.auth.models import User 
 
-from profiles.models import UserProfile, FollowRequest
-from accounts.serializers import UserSerializer
-from .mixins import FollowCountMixinSerializer, IsFollowingMixinSerializer
-
 from rest_framework import serializers
 
+from profiles.models import UserProfile, FollowRequest
+from .mixins import (UserInfoMixinSerializer, ProfilePhotoMixinSerializer, FollowCountMixinSerializer, 
+                        IsFollowingMixinSerializer)
 
-class UserProfileSerializer(serializers.ModelSerializer, FollowCountMixinSerializer, IsFollowingMixinSerializer):
+
+class UserProfileSerializer(serializers.ModelSerializer, UserInfoMixinSerializer, FollowCountMixinSerializer, 
+                                IsFollowingMixinSerializer):
     """
     A User profile serialzier.
     """
-    username = serializers.CharField(source='user.username')
-    first_name = serializers.CharField(source='user.first_name')
-    last_name = serializers.CharField(source='user.last_name')
-    email = serializers.EmailField(source='user.email')
     items_count = serializers.SerializerMethodField(read_only=True)
-    followers_url = serializers.HyperlinkedIdentityField(view_name='profiles-api:followers', lookup_field='id')
-    following_url = serializers.HyperlinkedIdentityField(view_name='profiles-api:following', lookup_field='id')
 
     class Meta:
         model  = UserProfile
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'photo', 'bio', 'following_count',
-            'followers_count', 'items_count', 'is_following', 'followers_url', 'following_url', 'facebook',
-            'twitter', 'website', 'private_account', 'updated_at', 'created_at'] 
+            'followers_count', 'items_count', 'is_following', 'facebook', 'twitter', 'website', 
+            'private_account', 'updated_at', 'created_at'] 
         
     def validate_username(self, value):
         """
@@ -52,57 +47,33 @@ class UserProfileSerializer(serializers.ModelSerializer, FollowCountMixinSeriali
     def update(self, instance, validated_data):
         request = self.context['request']
         # update user
-        user = validated_data.get('user')
-        instance.user.username = user.get('username')
-        instance.user.first_name = user.get('first_name')
-        instance.user.last_name = user.get('last_name')
-        instance.user.email = user.get('email')
+        instance.user.username = validated_data.get('username', instance.user.username)
+        instance.user.first_name = validated_data.get('first_name', instance.user.first_name)
+        instance.user.last_name = validated_data.get('last_name', instance.user.last_name)
+        instance.user.email = validated_data.get('email', instance.user.email)
         instance.user.save()
-        # update instance
-        instance.photo = validated_data.get('photo', instance.photo)
-        instance.bio = validated_data.get('bio')
-        instance.facebook = validated_data.get('facebook')
-        instance.twitter = validated_data.get('twitter')
-        instance.website = validated_data.get('website')
-        instance.private_account = validated_data.get('private_account')
-        instance.save()
-        return instance
+        return super().update(instance, validated_data)  
   
     def get_items_count(self, obj):
         return obj.user.items.count()
     
 
-class UserFollowersTagSerializer(serializers.ModelSerializer, IsFollowingMixinSerializer):
+class UserFollowersTagSerializer(serializers.ModelSerializer, UserInfoMixinSerializer, IsFollowingMixinSerializer):
     """
     User followers tag list serializer.
     """
-    username = serializers.CharField(source='user.username')
-    first_name = serializers.CharField(source='user.first_name')
-    last_name = serializers.CharField(source='user.last_name')
-    profile_url = serializers.HyperlinkedIdentityField(view_name='profiles-api:detail', lookup_field='id')
-
     class Meta:
         model  = UserProfile
-        fields = ['id', 'username', 'first_name', 'last_name', 'photo', 'is_following', 'profile_url']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'photo', 'is_following']
 
 
-class UserFollowingSerializer(serializers.ModelSerializer):
+class UserFollowingSerializer(serializers.ModelSerializer, ProfilePhotoMixinSerializer):
     """
     User following list serialzier.
-    """
-    photo = serializers.SerializerMethodField(read_only=True)
-    profile_url = serializers.HyperlinkedIdentityField(view_name='profiles-api:detail', lookup_field='id')
-    
+    """    
     class Meta:
         model  = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'photo', 'profile_url'] 
-
-    def get_photo(self, obj):
-        request = self.context["request"]
-        try:
-            return request.build_absolute_uri(obj.userprofile.photo.url)
-        except:
-            return request.build_absolute_uri(obj.photo.url)    
+        fields = ['id', 'username', 'first_name', 'last_name', 'photo'] 
 
 
 class UserFollowRequestSerializer(serializers.ModelSerializer):

@@ -1,18 +1,20 @@
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.core.mail import EmailMessage
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnicodeDecodeError
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth.models import User
-
-from .permissions import AnonPermissionOnly
-from .serializers import (
-    UserCreateSerializer, 
-    UserLoginSerializer,
-    PassowordChangeSerializer,
-    PasswordResetEmailSerializer,
-    PasswordResetSerializer,
-)
 
 from rest_framework import generics, mixins, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from .permissions import AnonPermissionOnly
+from .serializers import (UserCreateSerializer, PassowordChangeSerializer, PasswordResetEmailSerializer, 
+                            PasswordResetSerializer)
 
 
 class UserRegisterAPIView(generics.CreateAPIView):
@@ -25,24 +27,6 @@ class UserRegisterAPIView(generics.CreateAPIView):
 
     def get_serializer_context(self, *args, **kwargs):
         return {"request":self.request}
-
-
-class UserLoginAPIView(APIView):
-    """
-    User login API view.
-    """
-    permission_classes = [AnonPermissionOnly]  
-    serializer_class = UserLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Override the post method and login user.
-        """
-        serializer = UserLoginSerializer(data=request.data, context={"request": self.request})
-        if serializer.is_valid(raise_exception=True):
-            new_data = serializer.data
-            return Response(new_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLogoutAPIView(APIView):
@@ -85,6 +69,7 @@ class PassowordChangeAPIView(generics.UpdateAPIView):
 
 class PasswordResetEmailAPIView(APIView):
     """
+    Password reset email API view.
     """
     def post(self, request, *args, **kwargs):
         """
@@ -114,9 +99,11 @@ class PasswordResetEmailAPIView(APIView):
 
 class PasswordResetTokenCheckAPIView(APIView):
     """
+    Password reset token check API view.
     """
     def get(self, request, uidb64, token, *args, **kwargs):
         """
+        Check if the token is valid, and return it and uidb64.
         """
         try:
             # decode the user's id and get the user by id.
@@ -124,10 +111,10 @@ class PasswordResetTokenCheckAPIView(APIView):
             user = User.objects.get(id=user_id)
             # check if the token is valid.
             if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({"error":"Token is not valid, please request a new one."}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({"error":"Token is invalid, please request a new one."}, status=status.HTTP_401_UNAUTHORIZED)
             return Response({"success":"Credintials are Valid", "uidb64":uidb64, "token":token}, status.HTTP_200_OK)
         except DjangoUnicodeDecodeError:
-            return Response({"error":"Token is not valid, please request a new one."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error":"Token is invalid, please request a new one."}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class PasswordResetFormAPIView(generics.GenericAPIView):

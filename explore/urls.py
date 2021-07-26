@@ -12,6 +12,6 @@ urlpatterns = [
     # explore items.
     path('', ExploreItemsAPIView.as_view(), name='explore-items'),
     # hashtags items.
-    path('tags/<int:hashtag_id>/', HashtagItemsAPIView.as_view(), name='hashtags-items'),
+    path('tags/<str:hashtag_slug>/', HashtagItemsAPIView.as_view(), name='hashtags-items'),
     
 ]

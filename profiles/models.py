@@ -109,24 +109,18 @@ class UserProfileManager(models.Manager):
             return qs.first()
         return False
 
-    def tag_to_qs(self, tags_str):
+    def tag_to_qs(self, tags_list):
         """
-        Take a string of usernames (tags), get rid of '@', split it using space as a delim, 
-        and return a queryset of profiles of these usernames.  
+        Take a string of usernames (tags), and return a queryset of profiles of these usernames.  
         """
         tags_ids = []
-        # take away any @ in tags string and split it using space as a delim.
-        # here, a space is used a delim, so it's not allowed in the tag name.
-        tags_list = tags_str.replace("@", "").split()
         for tag in tags_list:
             # get profile of each tag by using get_profile method. 
             obj = self.get_profile(tag)
             if obj:
-                # append each tag's id to a list of tags ids.
                 tags_ids.append(obj.id)  
-        # get queryset of profiles of these tags by filtering their ids.    
-        qs = self.get_queryset().filter(id__in=tags_ids).distinct()
-        return qs
+        # get queryset of profiles of these tags by filtering their ids.
+        return self.get_queryset().filter(id__in=tags_ids).distinct()
 
     def suggested_profiles(self, user):
         """

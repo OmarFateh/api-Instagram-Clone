@@ -3,6 +3,10 @@ import string
 
 from django.utils.timesince import timesince
 
+from explore.models import Hashtag
+from profiles.models import UserProfile
+from notifications.models import Notification
+
 
 def datetime_to_string(datetime):
     """
@@ -45,3 +49,37 @@ def unique_slug_generator(instance, new_slug=None):
         new_slug = random_string_generator()
         return unique_slug_generator(instance, new_slug=new_slug)
     return slug
+
+
+def add_hashtags(item_obj, hashtags_lst):
+    """
+    Take item obj and hashtgas list, convert hashtags to queryset,
+    add them to the item. 
+    """
+    hashtags_qs = Hashtag.objects.hashtag_to_qs(hashtags_lst)
+    item_obj.hashtags.set(hashtags_qs)     
+
+
+def add_tags(item_obj, tags_lst, is_update=False):
+    """
+    Take item obj and tags list, convert tags to queryset,
+    if is update, inactive 
+    """
+    # convert the submitted tags string to a tags queryset.
+    tags_qs = UserProfile.objects.tag_to_qs(tags_lst)
+    # add tags to the item's tags.
+    item_obj.tags.set(tags_qs)
+    # create tag notification for each user. 
+    sender = item_obj.owner.userprofile
+    if is_update:
+        # inactive notifications of tags that are no longer exist.
+        Notification.objects.inactive_tag_notification(sender=sender, item=item_obj, notification_type='tag')
+        for tag in tags_qs:  
+            # set each tag as a notification receiver.
+            receiver = tag
+            # get tag notification for this item if it already exists, if not, create new one.
+            Notification.objects.get_or_create_notification(sender=sender, receiver=receiver, item=item_obj, notification_type='tag')
+    else:
+        for tag in tags_qs:
+            receiver = tag
+            Notification.objects.create(sender=sender, receiver=receiver, item=item_obj, notification_type='tag')

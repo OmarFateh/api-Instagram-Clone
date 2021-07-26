@@ -1,30 +1,26 @@
-from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
 from django.contrib.auth.models import User 
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed 
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from profiles.mixins import ProfilePhotoMixinSerializer
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer, ProfilePhotoMixinSerializer):
     """
     A user serializer.
     """
-    photo = serializers.SerializerMethodField(read_only=True)
-    profile_url = serializers.HyperlinkedIdentityField(view_name='profiles-api:detail', lookup_field='id')
+    profile_url = serializers.HyperlinkedIdentityField(view_name='profiles-api:detail', lookup_field='username')
 
     class Meta:
         model  = User
         fields = ['id', 'username', 'first_name', 'last_name', 'photo', 'profile_url']
         read_only_fields = ('username',)
-
-    def get_photo(self, obj):
-        request = self.context["request"]
-        try:
-            return request.build_absolute_uri(obj.userprofile.photo.url)
-        except:
-            return request.build_absolute_uri(obj.photo.url)    
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -34,19 +30,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(label='Email Address')
     email2 = serializers.EmailField(label='Confirm Email')
     password2 = serializers.CharField(label='Confirm Password', write_only=True)
-    token = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model  = User 
-        fields = ['username', 'email', 'email2', 'password', 'password2', 'token']
+        fields = ['username', 'first_name', 'last_name', 'email', 'email2', 'password', 'password2']
         extra_kwargs = {"password":{'write_only':True}}
     
-    def get_token(self, obj):
-        request = self.context['request']
-        refresh = RefreshToken.for_user(request.user)
-        response = {'refresh': str(refresh), 'access': str(refresh.access_token),}
-        return response 
-
     def validate_email(self, value):
         """
         Validate email 1.
@@ -79,51 +68,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
         Create and return a new user.
         """
         username = validated_data['username']
+        first_name = validated_data['first_name']
+        last_name = validated_data['last_name']
         email = validated_data['email']
         password = validated_data['password']
-        user_obj = User(
-            username = username,
-            email = email
-        )
+        user_obj = User(username=username, first_name=first_name,
+                        last_name=last_name, email=email)
         user_obj.set_password(password)
         user_obj.save()
         return validated_data
-
-
-class UserLoginSerializer(serializers.ModelSerializer):
-    """
-    A serializer for user login.
-    """
-    username_email = serializers.CharField(label='Username or Email')
-    token = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model  = User 
-        fields = ['username_email', 'password', 'token']
-        extra_kwargs = {"password":{'write_only':True}}
-
-    def get_token(self, obj):
-        request = self.context['request']
-        refresh = RefreshToken.for_user(request.user)
-        response = {'refresh': str(refresh), 'access': str(refresh.access_token),}
-        return response 
-
-    def validate(self, data):
-        """
-        Validate entered data.
-        """
-        request = self.context['request']
-        username_email = data.get("username_email", None)
-        password = data["password"]
-        # check if the entered username or email and password are correct.
-        user = authenticate(username=username_email, password=password)
-        # Username or Email and Password are correct. 
-        if user:
-            # login user.
-            login(request, user)
-        else:
-            raise serializers.ValidationError("Username or Password is incorrect.")
-        return data
 
 
 class PassowordChangeSerializer(serializers.ModelSerializer):

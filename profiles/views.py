@@ -1,36 +1,36 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User 
 
-from profiles.models import UserProfile, FollowRequest
-from item.serializers import ItemListSerializer
-from notifications.models import Notification
-from .permissions import IsOwnerOrReadOnly
-from .serializers import UserProfileSerializer, UserFollowingSerializer, UserFollowersTagSerializer, UserFollowRequestSerializer
-
 from rest_framework import generics, permissions, mixins, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from profiles.models import UserProfile, FollowRequest
+from item.serializers import ItemListSerializer
+from notifications.models import Notification
+from .permissions import IsOwnerOrReadOnly, IsOwner, IsPrivateProfile
+from .serializers import UserProfileSerializer, UserFollowingSerializer, UserFollowersTagSerializer, UserFollowRequestSerializer
 
-class UserProfileDetailUpdateAPIView(mixins.UpdateModelMixin, generics.RetrieveAPIView):
+
+class UserProfileDetailUpdateAPIView(generics.RetrieveUpdateAPIView):
     """
     User profile detail update API view.
     Only the owner of the profile can update it, otherwise it will be displayed only.
     """
     permission_classes = [IsOwnerOrReadOnly]
 
-    queryset = UserProfile.objects.all()
+    queryset = UserProfile.objects.select_related('user')
     serializer_class = UserProfileSerializer
-    lookup_field = 'id'
     
     def get_serializer_context(self, *args, **kwargs):
         return {"request":self.request}
     
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+    def get_object(self, *args, **kwargs):
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
+        self.check_object_permissions(self.request, obj)
+        return obj
 
 
 class FollowUserAPIView(APIView):
@@ -40,15 +40,13 @@ class FollowUserAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self, *args, **kwargs):
-        # get user id from the requested url.
-        user_id = self.kwargs.get("id", None)
-        # get the user object by id
-        obj = get_object_or_404(UserProfile, id=user_id)
-        # check object permissions.
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
         self.check_object_permissions(self.request, obj)
         return obj
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Follow or unfollow and send notification for the followed user.
         """ 
@@ -103,7 +101,6 @@ class FollowRequestsListAPIView(generics.ListAPIView):
     def get_object(self, *args, **kwargs):
         # get the user profile object by id
         obj = get_object_or_404(UserProfile, id=self.request.user.userprofile.id)
-        # check object permissions
         self.check_object_permissions(self.request, obj)
         return obj
         
@@ -122,11 +119,10 @@ class AcceptFollowRequestAPIView(APIView):
         follow_id = self.kwargs.get("id", None)
         # get the follow request object by id.
         obj = get_object_or_404(FollowRequest, id=follow_id, receiver=self.request.user.userprofile, status='sent')
-        # check object permissions.
         self.check_object_permissions(self.request, obj)
         return obj
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Accept follow request.
         """  
@@ -146,11 +142,10 @@ class DeclineFollowRequestAPIView(APIView):
         follow_id = self.kwargs.get("id", None)
         # get the follow request object by id.
         obj = get_object_or_404(FollowRequest, id=follow_id, receiver=self.request.user.userprofile, status='sent')
-        # check object permissions.
         self.check_object_permissions(self.request, obj)
         return obj
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """
         Decline follow request.
         """  
@@ -164,17 +159,16 @@ class UserFollowingListAPIView(generics.ListAPIView):
     """
     Display a list of user's followings.
     """
+    permission_classes = [IsPrivateProfile]
     serializer_class = UserFollowingSerializer
 
     def get_serializer_context(self, *args, **kwargs):
         return {"request":self.request}
 
     def get_object(self, *args, **kwargs):
-        # get user id from the requested url
-        user_id = self.kwargs.get("id", None)
-        # get the user profile object by id
-        obj = get_object_or_404(UserProfile, id=user_id)
-        # check object permissions
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
         self.check_object_permissions(self.request, obj)
         return obj
         
@@ -187,17 +181,16 @@ class UserFollowersListAPIView(generics.ListAPIView):
     """
     Display a list of user's followers.
     """
+    permission_classes = [IsPrivateProfile]
     serializer_class = UserFollowersTagSerializer
 
     def get_serializer_context(self, *args, **kwargs):
         return {"request":self.request}
 
     def get_object(self, *args, **kwargs):
-        # get user id from the requested url
-        user_id = self.kwargs.get("id", None)
-        # get the user profile object by id
-        obj = get_object_or_404(UserProfile, id=user_id)
-        # check object permissions
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
         self.check_object_permissions(self.request, obj)
         return obj
         
@@ -210,14 +203,13 @@ class UserItemsListAPIView(generics.ListAPIView):
     """
     Display a list of user's items.
     """
+    permission_classes = [IsPrivateProfile]
     serializer_class = ItemListSerializer
 
     def get_object(self, *args, **kwargs):
-        # get user id from the requested url
-        user_id = self.kwargs.get("id", None)
-        # get the user profile object by id
-        obj = get_object_or_404(UserProfile, id=user_id)
-        # check object permissions
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
         self.check_object_permissions(self.request, obj)
         return obj
         
@@ -230,14 +222,13 @@ class UserItemsFavouritesListAPIView(generics.ListAPIView):
     """
     Display a list of user's favourites items.
     """
+    permission_classes = [IsOwner]
     serializer_class = ItemListSerializer
 
     def get_object(self, *args, **kwargs):
-        # get user id from the requested url
-        user_id = self.kwargs.get("id", None)
-        # get the user profile object by id
-        obj = get_object_or_404(UserProfile, id=user_id)
-        # check object permissions
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
         self.check_object_permissions(self.request, obj)
         return obj
         
@@ -250,14 +241,13 @@ class UserItemsTaggedListAPIView(generics.ListAPIView):
     """
     Display a list of user's tagged items.
     """
+    permission_classes = [IsPrivateProfile]
     serializer_class = ItemListSerializer
 
     def get_object(self, *args, **kwargs):
-        # get user id from the requested url
-        user_id = self.kwargs.get("id", None)
-        # get the user profile object by id
-        obj = get_object_or_404(UserProfile, id=user_id)
-        # check object permissions
+        # get profile username from the requested url.
+        profile_username = self.kwargs.get("username", None)
+        obj = get_object_or_404(UserProfile.objects.select_related('user'), user__username=profile_username)
         self.check_object_permissions(self.request, obj)
         return obj
         

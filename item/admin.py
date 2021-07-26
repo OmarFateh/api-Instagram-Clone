@@ -39,7 +39,6 @@ class ItemAdmin(admin.ModelAdmin):
         model = Item
 
 
-
 # models admin site registeration 
 admin.site.register(Item, ItemAdmin)
 admin.site.register(Comment)

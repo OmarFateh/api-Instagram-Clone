@@ -46,12 +46,13 @@ class NotificationManager(models.Manager):
         Take sender, receiver, item, and notification_type.
         Get the notification if it already exists, and if not, create a new notification.
         """
-        # filter the queryset to check if the notification already exists or not. 
+        # check and return the notification if already exists or not. 
         qs_get = self.get_queryset().filter(sender=sender, receiver=receiver, item=item, notification_type=notification_type)
-        # if the notification exists, get it.
         if qs_get.exists():
+            # activate all notification that already exists
+            qs_get.update(is_active=True)
             return qs_get.first(), False
-        # if not, create a new one.     
+        # create a new one.     
         return Notification.objects.create(sender=sender, receiver=receiver, item=item, notification_type=notification_type), True  
     
     def inactive_tag_notification(self, sender, item, notification_type):
@@ -59,15 +60,10 @@ class NotificationManager(models.Manager):
         Take sender, item, and notification_type.
         Inactive tag notification which is longer exists in the item's tags.
         """
-        # get all tags of the item.
         item_tags = item.tags.all()
         # get a queryset of tag notifications excluding the ones of the item and set them to be inactive.
         return self.get_queryset().filter(sender=sender, item=item, notification_type=notification_type, 
-                    is_active=True).exclude(receiver__in=item_tags).update(is_active=False)
-        # if qs_delete.exists():
-        #     for notify in qs_delete:
-        #         # delete notification.
-        #         notify.delete()    
+                    is_active=True).exclude(receiver__in=item_tags).update(is_active=False)   
 
 
 class Notification(BaseTimestamp):
