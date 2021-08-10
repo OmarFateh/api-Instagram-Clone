@@ -3,7 +3,7 @@
 
 ## Table of contents
 * [Technologies](#technologies)
-* [Setup](#setup)
+* [Live](#live)
 * [Features](#features)
 * [User Credintials](#User-Credintials)
 * [TODO](#TODO)
@@ -14,17 +14,8 @@
 * Django 2.2.19
 * Django Rest Framework 3.12.2
 
-## Setup
-The first thing to do is to clone the repository:  
-`$ git clone https://github.com/OmarFateh/api-Instagram-Clone.git`  
-Setup project environment with virtualenv and pip.  
-`$ virtualenv project-env`  
-Activate the virtual environment  
-`$ source project-env/Scripts/activate`  
-Install all dependencies  
-`$ pip install -r requirements.txt`  
-Run the server  
-`py manage.py runserver`
+## Live
+https://fatehgram-api.herokuapp.com/
 
 ## Features
 * Authentication: Registeration, login, logout, change and reset password.
