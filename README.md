@@ -5,6 +5,7 @@
 * [Technologies](#technologies)
 * [Setup](#setup)
 * [Features](#features)
+* [User Credintials](#User-Credintials)
 * [TODO](#TODO)
 
 
@@ -36,6 +37,10 @@ Run the server
 * A user can add images to his favourite list.
 * A user can view all his favourite list images.
 * A user can explore and view images of other profiles, with whom there's mutual friends.
+
+## User Credintials
+- username-->omarinsta     
+- password-->admin1600
 
 ## TODO
 * Implement Stories
