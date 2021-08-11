@@ -23,10 +23,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = '=s^z$$trug86cb&&zr$ny+cbd1#qph$3-*kez20koy6-tuk2t4'
+# SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -96,7 +97,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'dc1sttf8nvjti1',
         'USER': 'jmuuhacigtajbc',
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'PASSWORD': 'f52b39a79dc7cbbade79c5d00d035f3c060efb1c42d84122256496186e55c927',
+        # 'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': 'ec2-52-209-171-51.eu-west-1.compute.amazonaws.com',
         'PORT': '5432',
     }
@@ -153,3 +155,11 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 # Media files (Uploaded Images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'fatehomar0@gmail.com'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
